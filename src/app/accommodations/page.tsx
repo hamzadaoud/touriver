@@ -80,7 +80,10 @@ export default function AccommodationsPage({ locale }: AccommodationsPageProps) 
 
   return (
     <>
-      <Navigation locale={locale} />
+         <Navigation 
+  locale={locale} 
+  onLocaleChange={() => {}} 
+/>
       <main className="min-h-screen bg-gray-50">
         <section id="accommodations" className="py-20">
           <div className="container mx-auto px-4 max-w-7xl">

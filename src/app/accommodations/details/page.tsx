@@ -30,6 +30,11 @@ interface Accommodation {
   };
 }
 
+// Add type definition for availability
+interface Availability {
+  [date: string]: boolean;
+}
+
 const accommodationsData: Accommodation[] = [
   {
     id: 1,
@@ -59,9 +64,9 @@ const accommodationsData: Accommodation[] = [
   },
 ];
 
-// Generate mock availability data
-const generateAvailability = () => {
-  const availability = {};
+// Generate mock availability data with proper typing
+const generateAvailability = (): Availability => {
+  const availability: Availability = {};
   const today = new Date();
   for (let i = 0; i < 90; i++) {
     const date = new Date(today);
@@ -73,11 +78,20 @@ const generateAvailability = () => {
   return availability;
 };
 
-const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, availability }) => {
+interface DatePickerProps {
+  label: string;
+  selectedDate: Date | null;
+  onDateSelect: (date: Date) => void;
+  minDate?: Date | null;
+  maxDate?: Date | null;
+  availability: Availability;
+}
+
+const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, availability }: DatePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
-  const formatDate = (date) => {
+  const formatDate = (date: Date | null) => {
     if (!date) return 'Add date';
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -85,7 +99,7 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
     });
   };
 
-  const getDaysInMonth = (date) => {
+  const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -93,7 +107,7 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
     
-    const days = [];
+    const days: (Date | null)[] = [];
     
     // Add empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
@@ -108,13 +122,13 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
     return days;
   };
 
-  const isDateAvailable = (date) => {
+  const isDateAvailable = (date: Date | null): boolean => {
     if (!date) return false;
     const dateStr = date.toISOString().split('T')[0];
     return availability[dateStr] === true;
   };
 
-  const isDateDisabled = (date) => {
+  const isDateDisabled = (date: Date | null): boolean => {
     if (!date) return true;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -134,8 +148,8 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   };
 
-  const handleDateClick = (date) => {
-    if (!isDateDisabled(date) && isDateAvailable(date)) {
+  const handleDateClick = (date: Date | null) => {
+    if (date && !isDateDisabled(date) && isDateAvailable(date)) {
       onDateSelect(date);
       setIsOpen(false);
     }
@@ -163,25 +177,29 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
             className="fixed inset-0 z-40" 
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[320px]">
+          <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[350px] max-w-[400px]">
             <div className="p-4">
+              {/* Month Navigation */}
               <div className="flex items-center justify-between mb-4">
                 <button 
                   onClick={prevMonth} 
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  type="button"
                 >
                   <ChevronLeft className="w-5 h-5 text-gray-600" />
                 </button>
-                <h3 className="font-semibold text-gray-900">{monthYear}</h3>
+                <h3 className="font-semibold text-gray-900 text-lg">{monthYear}</h3>
                 <button 
                   onClick={nextMonth} 
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  type="button"
                 >
                   <ChevronRight className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
               
-              <div className="grid grid-cols-7 gap-0 mb-2">
+              {/* Days of week header */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
                   <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
                     {day}
@@ -189,7 +207,8 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
                 ))}
               </div>
               
-              <div className="grid grid-cols-7 gap-0">
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-1">
                 {days.map((date, index) => {
                   const isDisabled = isDateDisabled(date);
                   const isAvailable = isDateAvailable(date);
@@ -200,11 +219,12 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
                       key={index}
                       onClick={() => handleDateClick(date)}
                       disabled={!date || isDisabled || !isAvailable}
+                      type="button"
                       className={`
-                        h-10 w-10 text-sm flex items-center justify-center rounded-lg transition-all duration-200
+                        h-10 w-10 text-sm flex items-center justify-center rounded-lg transition-all duration-200 relative
                         ${!date ? 'invisible' : ''}
                         ${isDisabled ? 'text-gray-300 cursor-not-allowed' : ''}
-                        ${!isAvailable && !isDisabled && date ? 'text-gray-400 cursor-not-allowed relative' : ''}
+                        ${!isAvailable && !isDisabled && date ? 'text-gray-400 cursor-not-allowed' : ''}
                         ${isAvailable && !isDisabled && date ? 'text-gray-700 hover:bg-green-50 hover:text-green-700 cursor-pointer' : ''}
                         ${isSelected ? 'bg-green-600 text-white hover:bg-green-700' : ''}
                       `}
@@ -221,6 +241,7 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
                 })}
               </div>
               
+              {/* Legend */}
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between text-xs text-gray-600">
                   <div className="flex items-center space-x-4">
@@ -240,6 +261,7 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
                   <button
                     onClick={() => setIsOpen(false)}
                     className="text-green-600 hover:text-green-700 font-medium"
+                    type="button"
                   >
                     Close
                   </button>
@@ -253,9 +275,17 @@ const DatePicker = ({ label, selectedDate, onDateSelect, minDate, maxDate, avail
   );
 };
 
-const ImageModal = ({ images, currentIndex, onClose, onNext, onPrev }) => {
+interface ImageModalProps {
+  images: string[];
+  currentIndex: number;
+  onClose: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+}
+
+const ImageModal = ({ images, currentIndex, onClose, onNext, onPrev }: ImageModalProps) => {
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') onPrev();
       if (e.key === 'ArrowRight') onNext();
@@ -308,21 +338,26 @@ const ImageModal = ({ images, currentIndex, onClose, onNext, onPrev }) => {
   );
 };
 
-interface AccommodationDetailsPageProps {
-  locale: Locale;
+interface PageProps {
+  params: {
+    locale: Locale;
+  };
+  searchParams: {
+    id?: string;
+  };
 }
 
-export default function AccommodationDetailsPage({ locale }: AccommodationDetailsPageProps) {
+export default function AccommodationDetailsPage({ params, searchParams }: PageProps) {
+  const { locale } = params;
   const t = getTranslation(locale);
-  const searchParams = useSearchParams();
-  const idParam = searchParams.get('id');
+  const idParam = searchParams.id;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
-  const [checkInDate, setCheckInDate] = useState(null);
-  const [checkOutDate, setCheckOutDate] = useState(null);
-  const [availability] = useState(() => generateAvailability());
+  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [availability] = useState<Availability>(() => generateAvailability());
 
   const accommodation = accommodationsData.find((a) => a.id === Number(idParam)) || accommodationsData[0];
   const totalImages = accommodation.images.length;
@@ -330,7 +365,7 @@ export default function AccommodationDetailsPage({ locale }: AccommodationDetail
   const prevImage = () => setCurrentIndex((prev) => (prev - 1 + totalImages) % totalImages);
   const nextImage = () => setCurrentIndex((prev) => (prev + 1) % totalImages);
 
-  const openImageModal = (index) => {
+  const openImageModal = (index: number) => {
     setModalImageIndex(index);
     setShowImageModal(true);
   };
@@ -338,7 +373,7 @@ export default function AccommodationDetailsPage({ locale }: AccommodationDetail
   const nextModalImage = () => setModalImageIndex((prev) => (prev + 1) % totalImages);
   const prevModalImage = () => setModalImageIndex((prev) => (prev - 1 + totalImages) % totalImages);
 
-  const calculateNights = () => {
+  const calculateNights = (): number => {
     if (!checkInDate || !checkOutDate) return 0;
     const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
     return Math.ceil(timeDiff / (1000 * 3600 * 24));
@@ -352,13 +387,16 @@ export default function AccommodationDetailsPage({ locale }: AccommodationDetail
 
   return (
     <>
-      <Navigation locale={locale} />
+   <Navigation 
+  locale={locale} 
+  onLocaleChange={() => {}} 
+/>
       <main className="bg-white min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-6">
           <Link href="/accommodations" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
-            <ChevronLeft className="w-5 h-5 mr-2" />
-            {t.common.back}
-          </Link>
+  <ChevronLeft className="w-5 h-5 mr-2" />
+  {(t.common as any).back || 'Back'} {/* Fallback to 'Back' if not available */}
+</Link>
 
           {/* Header with title and actions */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
