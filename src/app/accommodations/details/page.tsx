@@ -338,19 +338,41 @@ const ImageModal = ({ images, currentIndex, onClose, onNext, onPrev }: ImageModa
   );
 };
 
+// Fixed interface to match Next.js 15 expectations
 interface PageProps {
-  params: {
+  params: Promise<{
     locale: Locale;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     id?: string;
-  };
+  }>;
 }
 
 export default function AccommodationDetailsPage({ params, searchParams }: PageProps) {
-  const { locale } = params;
-  const t = getTranslation(locale);
-  const idParam = searchParams.id;
+  // Use React state to handle the async params
+  const [locale, setLocale] = useState<Locale>('en');
+  const [idParam, setIdParam] = useState<string | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Handle async params
+  useEffect(() => {
+    const loadParams = async () => {
+      try {
+        const resolvedParams = await params;
+        const resolvedSearchParams = await searchParams;
+        
+        setLocale(resolvedParams.locale);
+        setIdParam(resolvedSearchParams.id);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading params:', error);
+        setIsLoading(false);
+      }
+    };
+
+    loadParams();
+  }, [params, searchParams]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -359,6 +381,16 @@ export default function AccommodationDetailsPage({ params, searchParams }: PageP
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
   const [availability] = useState<Availability>(() => generateAvailability());
 
+  // Show loading state while params are being resolved
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  const t = getTranslation(locale);
   const accommodation = accommodationsData.find((a) => a.id === Number(idParam)) || accommodationsData[0];
   const totalImages = accommodation.images.length;
 
@@ -387,16 +419,16 @@ export default function AccommodationDetailsPage({ params, searchParams }: PageP
 
   return (
     <>
-   <Navigation 
-  locale={locale} 
-  onLocaleChange={() => {}} 
-/>
+      <Navigation 
+        locale={locale} 
+        onLocaleChange={() => {}} 
+      />
       <main className="bg-white min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-6">
           <Link href="/accommodations" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
-  <ChevronLeft className="w-5 h-5 mr-2" />
-  {(t.common as any).back || 'Back'} {/* Fallback to 'Back' if not available */}
-</Link>
+            <ChevronLeft className="w-5 h-5 mr-2" />
+            {(t.common as any).back || 'Back'} {/* Fallback to 'Back' if not available */}
+          </Link>
 
           {/* Header with title and actions */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
